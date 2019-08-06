@@ -13,11 +13,14 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
     var currencyModel = CurrencyConversionModel()
     @IBOutlet weak var currencyPicker: UIPickerView!
     
+    var exchangeRate = 0.0
+    
     @IBOutlet weak var fromTextField: UITextField!
     @IBOutlet weak var toTextField: UITextField!
     
     @IBOutlet weak var fromView: UIView!
     @IBOutlet weak var toView: UIView!
+    
     @IBOutlet weak var fromCurrencyLabel: UILabel!
     @IBOutlet weak var toCurrencyLabel: UILabel!
     
@@ -25,6 +28,21 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
     var toCurrency = "USD"
     
     @IBOutlet weak var convertButton: UIButton!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        // Do any additional setup after loading the view.
+        
+        currencyPicker.delegate = self
+        currencyPicker.dataSource = self
+        
+        makeButtonRound(button: convertButton, 3.0, 10)
+        makeViewRound(view: fromView, 0, 10)
+        makeViewRound(view: toView, 0, 10)
+        setDefaultLabelValue()
+        
+        
+    }
     
     func numberOfComponents(in pickerView: UIPickerView) -> Int {
         return 2
@@ -72,19 +90,7 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         // using the row extract the value from your datasource (array[row])
     }
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view.
-        
-        currencyPicker.delegate = self
-        currencyPicker.dataSource = self
-        
-        makeButtonRound(button: convertButton, 3.0, 10)
-        makeViewRound(view: fromView, 0, 10)
-        makeViewRound(view: toView, 0, 10)
-        setDefaultLabelValue()
-
-    }
+   
     
     func makeButtonRound(button : UIButton, _ value : CGFloat, _ cornerRadius: CGFloat) {
         button.layer.cornerRadius = cornerRadius
@@ -98,9 +104,20 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         view.layer.borderColor = UIColor.white.cgColor
     }
     
+    @IBAction func convertCurrency(_ sender: Any) {
+        makeRequest()
+    }
+    
     func makeRequest() {
         
-        let api_url = "https:";
+        let API_BASE_URL = "https://api.exchangeratesapi.io/latest?";
+        
+//        fromCurrency = currencyModel.currencies[from]
+//        toCurrency = currencyModel.currencies[to]
+        fromCurrency = fromCurrencyLabel.text!
+        toCurrency = toCurrencyLabel.text!
+        
+        let api_url = "\(API_BASE_URL)base=\(fromCurrency)&symbols=\(toCurrency)"
         
         if let url = URL(string: api_url) {
             let dataTask = URLSession.shared.dataTask(with: url) {
@@ -111,21 +128,21 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
                     
                     do {
                         let json = try JSON(data: dataRecieved)
-                        if let exchangeRate = json["rates"].double {
+                        if let exchangeRate = json["rates"][self.toCurrency].double {
                             
+                            if let fromText = self.fromTextField.text {
+                                self.toTextField.text = String(Double(fromText)! * exchangeRate)
+                            }
                         }
                     } catch let err {
                         print("failed to create JSON object, \(err)")
                     }
                 }
             }
+            dataTask.resume()
         }
+    
     }
-    
-    
-    
-    
-    
 
 
 }
